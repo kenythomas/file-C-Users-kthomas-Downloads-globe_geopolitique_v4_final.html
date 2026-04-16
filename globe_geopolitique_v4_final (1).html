@@ -1,0 +1,439 @@
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font-sans,system-ui,sans-serif)}
+#app{display:flex;flex-direction:column;height:600px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-lg);overflow:hidden;background:var(--color-background-primary)}
+#ticker{background:#dc2626;padding:5px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;height:28px}
+#ticker-label{font-size:9px;font-weight:500;color:#fff;background:rgba(0,0,0,0.3);padding:1px 8px;border-radius:10px;white-space:nowrap}
+#ticker-scroll{font-size:11px;color:#fff;overflow:hidden;white-space:nowrap;flex:1;position:relative}
+#ticker-inner{display:inline-block;animation:tick 30s linear infinite}
+@keyframes tick{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+#main{display:flex;flex:1;overflow:hidden}
+#globe-col{flex:1;background:#0b1929;position:relative;overflow:hidden}
+#globe-canvas{display:block;cursor:grab;position:absolute;top:0;left:0;width:100%;height:100%}
+#globe-canvas:active{cursor:grabbing}
+#top-bar{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;z-index:2}
+#filters{display:flex;gap:4px}
+.ftab{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:500;cursor:pointer;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.55);background:rgba(255,255,255,0.06)}
+.ftab:hover,.ftab.on{color:#fff;background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3)}
+.ftab.on.fc{background:#dc2626;border-color:#dc2626}
+.ftab.on.fh{background:#d97706;border-color:#d97706}
+.ftab.on.fm{background:#2563eb;border-color:#2563eb}
+#pbtn{padding:3px 10px;border-radius:20px;font-size:10px;cursor:pointer;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.55);background:rgba(255,255,255,0.06)}
+#pbtn:hover{color:#fff;background:rgba(255,255,255,0.12)}
+#stats{position:absolute;bottom:10px;left:10px;display:flex;gap:6px;z-index:2}
+.schip{background:rgba(0,0,0,0.55);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 10px;display:flex;align-items:center;gap:5px}
+.schip-num{font-size:14px;font-weight:500;color:#fff}
+.schip-lbl{font-size:9px;color:rgba(255,255,255,0.45);line-height:1.2}
+.dot-c{width:7px;height:7px;border-radius:50%;background:#dc2626}
+.dot-h{width:7px;height:7px;border-radius:50%;background:#d97706}
+.dot-m{width:7px;height:7px;border-radius:50%;background:#2563eb}
+#date-chip{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.55);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:500;color:#fff;z-index:2}
+
+#right-panel{width:280px;flex-shrink:0;display:flex;flex-direction:column;border-left:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary);overflow:hidden}
+#list-view{display:flex;flex-direction:column;height:100%}
+#list-header{padding:10px 14px 8px;border-bottom:0.5px solid var(--color-border-tertiary);flex-shrink:0}
+#list-header h3{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+#list-header p{font-size:10px;color:var(--color-text-secondary);margin-top:1px}
+#ev-list{overflow-y:auto;flex:1}
+#ev-list::-webkit-scrollbar{width:3px}
+#ev-list::-webkit-scrollbar-thumb{background:var(--color-border-secondary);border-radius:2px}
+.erow{display:flex;align-items:flex-start;gap:8px;padding:8px 14px;border-bottom:0.5px solid var(--color-border-tertiary);cursor:pointer}
+.erow:hover{background:var(--color-background-secondary)}
+.erow.sel{background:#eff6ff}
+.edot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.edot.c{background:#dc2626}.edot.h{background:#d97706}.edot.m{background:#2563eb}.edot.w{background:#16a34a}
+.ebody{flex:1;min-width:0}
+.etitle{font-size:11px;font-weight:500;color:var(--color-text-primary);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.esub{font-size:9px;color:var(--color-text-secondary);margin-top:1px}
+.escore{font-size:10px;font-weight:500;padding:1px 6px;border-radius:10px;flex-shrink:0;align-self:center}
+.escore.c{background:#fee2e2;color:#991b1b}
+.escore.h{background:#fef3c7;color:#92400e}
+.escore.m{background:#dbeafe;color:#1e40af}
+.escore.w{background:#dcfce7;color:#15803d}
+
+#detail-view{display:none;flex-direction:column;height:100%;overflow:hidden}
+#dv-head{padding:10px 14px;border-bottom:0.5px solid var(--color-border-tertiary);flex-shrink:0}
+#back{font-size:10px;color:var(--color-text-secondary);cursor:pointer;margin-bottom:6px;display:flex;align-items:center;gap:3px}
+#back:hover{color:var(--color-text-primary)}
+#dv-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:500;margin-bottom:4px}
+#dv-badge.c{background:#fee2e2;color:#991b1b}
+#dv-badge.h{background:#fef3c7;color:#92400e}
+#dv-badge.m{background:#dbeafe;color:#1e40af}
+#dv-title{font-size:13px;font-weight:500;color:var(--color-text-primary);line-height:1.35;margin-bottom:2px}
+#dv-loc{font-size:10px;color:var(--color-text-secondary)}
+#dv-body{flex:1;overflow-y:auto;padding:12px 14px}
+#dv-body::-webkit-scrollbar{width:3px}
+#dv-body::-webkit-scrollbar-thumb{background:var(--color-border-secondary);border-radius:2px}
+
+.section{margin-bottom:14px}
+.sec-title{font-size:9px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-text-secondary);margin-bottom:6px;padding-bottom:4px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.desc-text{font-size:11px;color:var(--color-text-secondary);line-height:1.6}
+
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.kpi{background:var(--color-background-secondary);border-radius:6px;padding:7px 9px}
+.kpi-val{font-size:16px;font-weight:500;color:var(--color-text-primary);line-height:1}
+.kpi-val.red{color:#dc2626}.kpi-val.amber{color:#d97706}.kpi-val.blue{color:#2563eb}
+.kpi-lbl{font-size:9px;color:var(--color-text-secondary);margin-top:2px;line-height:1.3}
+
+.actors{display:flex;flex-direction:column;gap:4px}
+.actor{display:flex;align-items:center;gap:7px;padding:5px 8px;border:0.5px solid var(--color-border-tertiary);border-radius:6px;background:var(--color-background-primary)}
+.actor-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0}
+.actor-name{font-size:11px;font-weight:500;color:var(--color-text-primary)}
+.actor-role{font-size:9px;color:var(--color-text-secondary)}
+
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl-item{display:flex;gap:8px;padding-bottom:8px;position:relative}
+.tl-item:last-child{padding-bottom:0}
+.tl-left{display:flex;flex-direction:column;align-items:center;width:14px;flex-shrink:0}
+.tl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.tl-dot.c{background:#dc2626}.tl-dot.h{background:#d97706}.tl-dot.m{background:#2563eb}.tl-dot.n{background:var(--color-border-secondary)}
+.tl-line{width:1px;background:var(--color-border-tertiary);flex:1;margin-top:3px}
+.tl-date{font-size:9px;color:var(--color-text-secondary);font-weight:500;white-space:nowrap;margin-top:2px}
+.tl-text{font-size:11px;color:var(--color-text-primary);line-height:1.4;padding-top:1px}
+
+.score-rows{display:flex;flex-direction:column;gap:5px}
+.sr{display:flex;align-items:center;gap:7px}
+.sr-lbl{font-size:10px;color:var(--color-text-secondary);width:65px;flex-shrink:0}
+.sr-track{flex:1;height:5px;background:var(--color-background-tertiary);border-radius:3px;overflow:hidden}
+.sr-fill{height:5px;border-radius:3px;transition:width 0.4s ease}
+.sr-val{font-size:10px;font-weight:500;color:var(--color-text-primary);width:28px;text-align:right}
+
+.src-tag{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9px;border:0.5px solid var(--color-border-secondary);color:var(--color-text-secondary);margin:2px}
+
+#dv-footer{padding:10px 14px;border-top:0.5px solid var(--color-border-tertiary);flex-shrink:0}
+#brief-btn{width:100%;padding:8px;font-size:11px;font-weight:500;border-radius:8px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);cursor:pointer;text-align:center}
+#brief-btn:hover{background:var(--color-background-tertiary)}
+</style>
+
+<h2 class="sr-only">Globe géopolitique mondial interactif — 25 événements avec fiches détaillées, timelines et scores</h2>
+<div id="app">
+  <div id="ticker">
+    <span id="ticker-label">EN DIRECT</span>
+    <div id="ticker-scroll"><span id="ticker-inner">Ukraine: 212 combats/24h · Gaza: 738 morts depuis oct. 2025 · Iran-USA: cessez-le-feu fragile du 8 avr. · RDC: négociations M23 en Suisse · Sahel: 9362 morts en 2025 · Méditerranée: 990 morts depuis jan. 2026 (+150%)</span></div>
+  </div>
+  <div id="main">
+    <div id="globe-col">
+      <canvas id="globe-canvas"></canvas>
+      <div id="top-bar">
+        <div id="filters">
+          <div class="ftab on fa" onclick="setF('all',this)">Tous</div>
+          <div class="ftab fc" onclick="setF('critical',this)">Critique</div>
+          <div class="ftab fh" onclick="setF('high',this)">Élevé</div>
+          <div class="ftab fm" onclick="setF('moderate',this)">Modéré</div>
+        </div>
+        <button id="pbtn" onclick="toggleP(this)">⏸ Pause</button>
+      </div>
+      <div id="stats">
+        <div class="schip"><div class="dot-c"></div><div><div class="schip-num" id="cnt-c">5</div><div class="schip-lbl">Critiques</div></div></div>
+        <div class="schip"><div class="dot-h"></div><div><div class="schip-num" id="cnt-h">9</div><div class="schip-lbl">Élevés</div></div></div>
+        <div class="schip"><div class="dot-m"></div><div><div class="schip-num" id="cnt-m">11</div><div class="schip-lbl">Modérés</div></div></div>
+      </div>
+      <div id="date-chip">16 avr. 2026</div>
+    </div>
+    <div id="right-panel">
+      <div id="list-view">
+        <div id="list-header"><h3>Événements actifs</h3><p id="list-sub">25 foyers — par score d'importance</p></div>
+        <div id="ev-list"></div>
+      </div>
+      <div id="detail-view">
+        <div id="dv-head">
+          <div id="back" onclick="closeDetail()">← Retour à la liste</div>
+          <div id="dv-badge" class="c">Critique</div>
+          <div id="dv-title">—</div>
+          <div id="dv-loc">—</div>
+        </div>
+        <div id="dv-body"></div>
+        <div id="dv-footer">
+          <button id="brief-btn" onclick="doBriefing()">Générer un briefing complet ↗</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+const EV=[
+  {id:1,lat:48.5,lon:35,name:"Ukraine",title:"Guerre russo-ukrainienne",level:"critical",region:"Europe Est",source:["ISW","Reuters","État-Major UA"],
+   desc:"La Russie mène une guerre d'usure sur plus de 1 000 km de front. Les forces ukrainiennes résistent mais subissent une pression constante, notamment dans le Donbass. Les négociations de paix restent au point mort.",
+   kpis:[{val:"Jour 1513",lbl:"Guerre totale",color:""},{val:"~20%",lbl:"Territoire occupé",color:"red"},{val:"1M+",lbl:"Pertes russes (estimées)",color:"red"},{val:"250-300k",lbl:"Pertes ukrainiennes",color:"amber"}],
+   actors:[{icon:"🇺🇦",bg:"#dbeafe",color:"#1e40af",name:"Ukraine",role:"Forces de défense — résistance active"},{icon:"🇷🇺",bg:"#fee2e2",color:"#991b1b",name:"Russie",role:"Agression — offensive Est/Sud"},{icon:"🇺🇸",bg:"#f0fdf4",color:"#15803d",name:"USA/OTAN",role:"Soutien militaire et financier"},{icon:"🇩🇰",bg:"#eff6ff",color:"#1d4ed8",name:"UE",role:"Sanctions et aide économique"}],
+   timeline:[{d:"24 fév. 2022",t:"Invasion à grande échelle lancée par la Russie",c:"c"},{d:"Oct. 2022",t:"Annexion de 4 oblasts ukrainiens par Moscou",c:"c"},{d:"Juin 2023",t:"Contre-offensive ukrainienne — résultats limités",c:"h"},{d:"Fév. 2024",t:"Chute de Avdiivka — percée russe Donbass",c:"h"},{d:"Août 2024",t:"Incursion ukrainienne dans la région de Koursk",c:"h"},{d:"Avr. 2026",t:"212 combats/24h · 6 672 drones déployés",c:"c"}],
+   scores:{sources:10,victimes:10,impact:10,evolution:8,verif:10}},
+
+  {id:2,lat:31.5,lon:34.5,name:"Gaza / Israël",title:"Gaza — cessez-le-feu fragile",level:"critical",region:"Moyen-Orient",source:["OCHA","AP News","MSF","OHCHR"],
+   desc:"Six mois après le cessez-le-feu d'octobre 2025, la situation reste catastrophique. Les attaques israéliennes se poursuivent quotidiennement malgré l'accord. L'aide humanitaire est insuffisante et la reconstruction n'a pas commencé.",
+   kpis:[{val:"738",lbl:"Morts depuis cessez-le-feu",color:"red"},{val:"<100",lbl:"Camions aide/jour",color:"red"},{val:"90%",lbl:"Population déplacée",color:"amber"},{val:"72k+",lbl:"Morts totaux depuis oct.23",color:"red"}],
+   actors:[{icon:"🇵🇸",bg:"#fee2e2",color:"#991b1b",name:"Hamas / Civils Gaza",role:"Gouvernance & victimes civiles"},{icon:"🇮🇱",bg:"#fef9c3",color:"#854d0e",name:"Israël",role:"Opérations militaires continues"},{icon:"🇺🇸",bg:"#f0fdf4",color:"#15803d",name:"USA (Trump)",role:"Médiateur — Conseil de paix"},{icon:"🇶🇦",bg:"#eff6ff",color:"#1d4ed8",name:"Qatar / Égypte",role:"Facilitateurs du cessez-le-feu"}],
+   timeline:[{d:"7 oct. 2023",t:"Attaque Hamas — 1 200 morts en Israël",c:"c"},{d:"Oct. 2023",t:"Offensive terrestre israélienne à Gaza",c:"c"},{d:"Nov. 2025",t:"Résolution ONU 2803 — plan de paix US",c:"h"},{d:"10 oct. 2025",t:"Cessez-le-feu entré en vigueur",c:"m"},{d:"Janv. 2026",t:"Phase 2 : gouvernement technocratique intérimaire",c:"m"},{d:"Avr. 2026",t:"738 morts · aide bloquée · situation catastrophique",c:"c"}],
+   scores:{sources:10,victimes:9,impact:9,evolution:7,verif:10}},
+
+  {id:3,lat:33,lon:44,name:"Iran / USA / Golfe",title:"Guerre Iran–USA post-cessez-le-feu",level:"critical",region:"Moyen-Orient",source:["Reuters","ACLED","Al Jazeera"],
+   desc:"Le conflit déclenché le 28 février 2026 a frappé les infrastructures énergétiques du Golfe Persique. Un cessez-le-feu a été annoncé le 8 avril mais reste très fragile. Les négociations sur le nucléaire iranien sont au cœur des enjeux.",
+   kpis:[{val:"28 fév.",lbl:"Début des hostilités",color:""},{val:"660+",lbl:"Événements violents recensés",color:"red"},{val:"8 avr.",lbl:"Cessez-le-feu annoncé",color:"amber"},{val:"50%",lbl:"Tarif menacé sur pays aidant Iran",color:"amber"}],
+   actors:[{icon:"🇮🇷",bg:"#fee2e2",color:"#991b1b",name:"Iran",role:"Frappes sur infrastructure Golfe"},{icon:"🇺🇸",bg:"#dbeafe",color:"#1e40af",name:"USA / Israël",role:"Frappes sur capacités nucléaires"},{icon:"🇸🇦",bg:"#fef9c3",color:"#854d0e",name:"Arabie Saoudite",role:"Exposée — infrastructures pétrolières"},{icon:"🇾🇪",bg:"#fee2e2",color:"#991b1b",name:"Houthis (Yémen)",role:"Proxy iranien — mer Rouge"}],
+   timeline:[{d:"28 fév. 2026",t:"Début des hostilités USA-Iran",c:"c"},{d:"7 mars",t:"Frappes israéliennes sur raffineries de Téhéran",c:"c"},{d:"18 mars",t:"Frappe sur South Pars — réponse iranienne Gulf",c:"c"},{d:"Mars",t:"Iran cible aluminium en Bahrain et UAE",c:"h"},{d:"8 avr. 2026",t:"Cessez-le-feu annoncé — Houthis saluent la victoire",c:"m"},{d:"Avr. 2026",t:"Trump menace de tarifs 50% sur les pays aidant l'Iran",c:"h"}],
+   scores:{sources:9,victimes:8,impact:10,evolution:9,verif:9}},
+
+  {id:4,lat:-1.5,lon:29,name:"RDC — Nord/Sud Kivu",title:"Conflit M23 — est du Congo",level:"critical",region:"Afrique Centrale",source:["HRW","Critical Threats","Crisis Group"],
+   desc:"Le groupe armé M23, soutenu par le Rwanda, contrôle de vastes zones de l'est du Congo. Des négociations de paix sous médiation du Qatar se tiennent en Suisse. Les civils font face à une crise humanitaire sévère.",
+   kpis:[{val:"7M+",lbl:"Déplacés internes",color:"red"},{val:">100",lbl:"Groupes armés actifs",color:"amber"},{val:"13-17 avr.",lbl:"Négociations Suisse",color:"blue"},{val:"3-4k",lbl:"Soldats rwandais déployés",color:"amber"}],
+   actors:[{icon:"🇨🇩",bg:"#dbeafe",color:"#1e40af",name:"RDC (Kinshasa)",role:"Gouvernement — forces FARDC"},{icon:"⚔️",bg:"#fee2e2",color:"#991b1b",name:"M23 / AFC",role:"Rébellion — soutien rwandais"},{icon:"🇷🇼",bg:"#fef9c3",color:"#854d0e",name:"Rwanda",role:"Soutien militaire et politique au M23"},{icon:"🇶🇦",bg:"#f0fdf4",color:"#15803d",name:"Qatar / USA",role:"Médiation — processus Doha"}],
+   timeline:[{d:"2012",t:"Création du M23 — première rébellion",c:"n"},{d:"Janv. 2025",t:"M23 capture Goma — 900 à 2000 morts",c:"c"},{d:"4 fév. 2025",t:"Cessez-le-feu unilatéral M23 déclaré",c:"m"},{d:"Juin 2025",t:"RDC-Rwanda signent accord à Washington",c:"m"},{d:"14 nov. 2025",t:"Cadre de paix Doha signé — 8 piliers",c:"m"},{d:"13-17 avr. 2026",t:"9e round de négociations en Suisse",c:"h"}],
+   scores:{sources:9,victimes:8,impact:8,evolution:6,verif:9}},
+
+  {id:5,lat:14,lon:44,name:"Yémen",title:"Houthis — cessez-le-feu USA-Iran",level:"critical",region:"Moyen-Orient",source:["ACLED","Reuters","ONU"],
+   desc:"Les Houthis ont utilisé la guerre Iran-USA pour relancer leurs attaques en mer Rouge et sur Israël. Le cessez-le-feu du 8 avril a mis fin aux hostilités directes mais la situation reste instable.",
+   kpis:[{val:"8 avr.",lbl:"Cessez-le-feu annoncé",color:""},{val:"2M+",lbl:"Personnes en famine",color:"red"},{val:"2014",t:"Début conflit Yémen",color:""},{val:"Fragile",lbl:"Statut du cessez-le-feu",color:"amber"}],
+   actors:[{icon:"🇾🇪",bg:"#fee2e2",color:"#991b1b",name:"Houthis (Ansar Allah)",role:"Contrôle nord Yémen — attaques mer Rouge"},{icon:"🇾🇪",bg:"#dbeafe",color:"#1e40af",name:"Gouvernement yéménite",role:"Légitimité internationale — Sud"},{icon:"🇮🇷",bg:"#fee2e2",color:"#991b1b",name:"Iran",role:"Sponsor des Houthis — armes/renseignement"},{icon:"🇸🇦",bg:"#fef9c3",color:"#854d0e",name:"Arabie Saoudite / USA",role:"Coalition — pression militaire"}],
+   timeline:[{d:"2014",t:"Houthis prennent Sanaa — guerre civile",c:"c"},{d:"2015",t:"Intervention coalition saoudienne",c:"h"},{d:"Oct. 2023",t:"Houthis attaquent navires liés à Israël",c:"h"},{d:"Fév. 2026",t:"Houthis attaquent Israël — solidarité Iran",c:"c"},{d:"8 avr. 2026",t:"Cessez-le-feu USA-Iran inclut les Houthis",c:"m"},{d:"Avr. 2026",t:"Pas de déclaration officielle Abdulmalik al-Houthi",c:"h"}],
+   scores:{sources:8,victimes:7,impact:8,evolution:7,verif:8}},
+
+  {id:6,lat:15,lon:2,name:"Mali · Burkina · Niger",title:"Insurgence jihadiste Sahel",level:"high",region:"Afrique Ouest",source:["Crisis Group","ACLED","OCHA"],
+   desc:"Le JNIM (Al-Qaïda) et l'ISSP (État Islamique) intensifient leurs opérations dans les trois pays du Sahel Alliance. Les juntes militaires au pouvoir n'arrivent pas à endiguer la progression malgré le soutien russe.",
+   kpis:[{val:"9 362",lbl:"Morts en 2025 (OCHA)",color:"red"},{val:"10%",lbl:"Population BF déplacée",color:"amber"},{val:"3 pays",lbl:"Alliance États Sahel (AES)",color:""},{val:"5 000",lbl:"Force unifiée AES lancée déc.25",color:"blue"}],
+   actors:[{icon:"☪️",bg:"#fee2e2",color:"#991b1b",name:"JNIM (Al-Qaïda)",role:"Groupe dominant — siège de Bamako 2025"},{icon:"☪️",bg:"#fee2e2",color:"#991b1b",name:"ISSP (État Islamique)",role:"Concurrent — nord Burkina/Niger"},{icon:"🪖",bg:"#fef9c3",color:"#854d0e",name:"Juntes AES",role:"Gouvernements militaires — Russie comme allié"},{icon:"🇷🇺",bg:"#dbeafe",color:"#1e40af",name:"Africa Corps",role:"Ex-Wagner — appui militaire aux juntes"}],
+   timeline:[{d:"2012",t:"Rébellion Tuareg + jihadistes au Mali",c:"c"},{d:"2020-22",t:"Coups d'État au Mali, Burkina, Niger",c:"h"},{d:"2023",t:"Alliance États Sahel — rupture ECOWAS",c:"h"},{d:"Sept. 2025",t:"JNIM bloque l'approvisionnement en carburant de Bamako",c:"c"},{d:"Fév. 2026",t:"JNIM attaques coordonnées est Burkina Faso",c:"c"},{d:"Fév. 2026",t:"ISSP frappe aéroport et base militaire du Niger",c:"c"}],
+   scores:{sources:8,victimes:8,impact:7,evolution:6,verif:8}},
+
+  {id:7,lat:23.5,lon:121,name:"Taïwan",title:"Taïwan — tensions Détroit",level:"high",region:"Asie-Pacifique",source:["ISW","AEI","Ministère Défense TW"],
+   desc:"La Chine maintient une pression militaire et diplomatique constante sur Taïwan sans franchir le seuil du conflit ouvert. Une réunion historique entre le KMT taïwanais et Xi Jinping en avril 2026 ouvre une fenêtre de dialogue.",
+   kpis:[{val:"60%",lbl:"Semi-conducteurs mondiaux",color:"red"},{val:"28 sorties",lbl:"PLA en 24h (mars 2026)",color:"amber"},{val:"13 jours",lbl:"Pause ADIZ fév-mars 2026",color:"blue"},{val:"8 Md$",lbl:"Vente armes US à Taïwan",color:"blue"}],
+   actors:[{icon:"🇨🇳",bg:"#fee2e2",color:"#991b1b",name:"Chine (PLA)",role:"Pression militaire — incursions ADIZ"},{icon:"🇹🇼",bg:"#dbeafe",color:"#1e40af",name:"Taïwan (DPP)",role:"Défense — budget bloqué au parlement"},{icon:"🇺🇸",bg:"#f0fdf4",color:"#15803d",name:"USA",role:"Ambiguïté stratégique — ventes d'armes"},{icon:"🏛️",bg:"#fef9c3",color:"#854d0e",name:"KMT (opposition)",role:"Dialogue avec Pékin — bloque budget défense"}],
+   timeline:[{d:"Août 2022",t:"4e crise du Détroit — manœuvres PLA record",c:"c"},{d:"Déc. 2025",t:"Justice Mission 2025 — exercices majeurs PLA",c:"h"},{d:"Janv. 2026",t:"Présidente Lai annonce +40 Md$ budget défense",c:"h"},{d:"Fév-mars 2026",t:"Pause de 13 jours des incursions ADIZ",c:"m"},{d:"Avr. 2026",t:"Présidente KMT rencontre Xi — premier contact en 10 ans",c:"m"},{d:"Mai 2026",t:"Sommet Xi-Trump prévu à Pékin",c:"h"}],
+   scores:{sources:9,victimes:2,impact:10,evolution:5,verif:9}},
+
+  {id:8,lat:39,lon:116,name:"Chine",title:"Chine — terres rares & commerce",level:"high",region:"Asie-Pacifique",source:["Reuters","China Briefing","Tax Foundation"],
+   desc:"Pékin utilise le contrôle des terres rares comme levier dans les négociations commerciales avec Washington. Le sommet Xi-Trump prévu mi-mai 2026 est le moment diplomatique clé de l'année.",
+   kpis:[{val:"13.7%",lbl:"Taux moyen tarifs US",color:"amber"},{val:"Bloqués",lbl:"Export terres rares vers USA",color:"red"},{val:"Mi-mai",lbl:"Sommet Xi-Trump Pékin",color:"blue"},{val:"80%+",lbl:"Terres rares mondiales contrôlées",color:"red"}],
+   actors:[{icon:"🇨🇳",bg:"#fee2e2",color:"#991b1b",name:"Chine (Xi Jinping)",role:"Contrôle terres rares — levier commercial"},{icon:"🇺🇸",bg:"#dbeafe",color:"#1e40af",name:"USA (Trump)",role:"Tarifs 232 — négociation commerciale"},{icon:"🌏",bg:"#f0fdf4",color:"#15803d",name:"Indo-Pacifique",role:"Alliés US — Samsung, TSMC, Toyota"},{icon:"🏭",bg:"#fef9c3",color:"#854d0e",name:"Industrie tech mondiale",role:"Dépendance aux semi-conducteurs TW"}],
+   timeline:[{d:"Avr. 2025",t:"USA imposent tarifs réciproques — Chine répond terres rares",c:"c"},{d:"Fév. 2026",t:"SCOTUS invalide IEEPA — tarifs réduits à 13.7%",c:"m"},{d:"Mars 2026",t:"Section 301 — enquête sur non-respect accord 2020",c:"h"},{d:"10 avr. 2026",t:"Kim Jong-un soutient revendications sur Taïwan",c:"h"},{d:"Mi-mai 2026",t:"Sommet Xi-Trump prévu à Pékin",c:"m"},{d:"Avr. 2026",t:"Trump menace tarifs 50% si pays aident Iran",c:"h"}],
+   scores:{sources:8,victimes:1,impact:9,evolution:6,verif:8}},
+
+  {id:9,lat:55,lon:37,name:"Russie",title:"Russie — économie de guerre",level:"high",region:"Europe",source:["Reuters","ISW"],
+   desc:"L'économie russe subit une pression croissante des sanctions et des frappes ukrainiennes sur ses infrastructures pétrolières. Les dépenses militaires consomment une part record du budget.",
+   kpis:[{val:"40%",lbl:"Export pétrole paralysé",color:"red"},{val:"~30%",lbl:"Budget alloué à la défense",color:"red"},{val:"3 ports",lbl:"Terminaux pétroliers frappés",color:"amber"},{val:"13.7%",lbl:"Inflation estimée",color:"amber"}],
+   actors:[{icon:"🇷🇺",bg:"#fee2e2",color:"#991b1b",name:"Kremlin",role:"Économie de guerre — sanctions contournées"},{icon:"🇺🇦",bg:"#dbeafe",color:"#1e40af",name:"Ukraine",role:"Frappes drones sur infra pétrolière russe"},{icon:"🌍",bg:"#fef9c3",color:"#854d0e",name:"G7",role:"Sanctions — plafond prix pétrole"},{icon:"🇮🇳",bg:"#f0fdf4",color:"#15803d",name:"Inde / Chine",role:"Acheteurs de pétrole russe soldé"}],
+   timeline:[{d:"Fév. 2022",t:"Début des sanctions occidentales massives",c:"h"},{d:"2023",t:"Contournement via Inde, Chine, EAU",c:"m"},{d:"2025",t:"Ukraine frappe raffineries et terminaux russes",c:"h"},{d:"Mars 2026",t:"40% export pétrole à l'arrêt (Reuters)",c:"c"},{d:"Avr. 2026",t:"Belgorod: pannes chauffage, eau affectées",c:"h"},{d:"Avr. 2026",t:"G7 discute nouvelles mesures sur tankers",c:"m"}],
+   scores:{sources:8,victimes:3,impact:8,evolution:6,verif:8}},
+
+  {id:10,lat:38,lon:-97,name:"États-Unis",title:"USA — tarifs post-SCOTUS",level:"high",region:"Amér. Nord",source:["Tax Foundation","Reuters","Wikipedia"],
+   desc:"La Cour Suprême a invalidé les tarifs IEEPA en février 2026, forçant Trump à recourir à la Section 122. La politique commerciale américaine reste imprévisible, avec des conséquences sur les chaînes d'approvisionnement mondiales.",
+   kpis:[{val:"13.7%",lbl:"Taux moyen effectif fév. 2026",color:"amber"},{val:"+1 500$",lbl:"Coût par ménage US/an",color:"red"},{val:"20 fév.",lbl:"Arrêt SCOTUS IEEPA",color:""},{val:"24 juil.",lbl:"Expiration Section 122",color:"blue"}],
+   actors:[{icon:"🇺🇸",bg:"#dbeafe",color:"#1e40af",name:"Trump / Maison Blanche",role:"Tarifs 232 — Section 122 — menaces 50%"},{icon:"⚖️",bg:"#fee2e2",color:"#991b1b",name:"Cour Suprême USA",role:"Invalide IEEPA 6-3 — refonds 166 Md$"},{icon:"🌍",bg:"#fef9c3",color:"#854d0e",name:"Partenaires commerciaux",role:"Contre-mesures — rétorsions"},{icon:"🏭",bg:"#f0fdf4",color:"#15803d",name:"Industrie US",role:"Réorganisation chaînes d'appro"}],
+   timeline:[{d:"2 avr. 2025",t:"Liberation Day — tarifs réciproques 10% minimum",c:"c"},{d:"Avr-sept 2025",t:"Montée à 27% taux moyen — plus haut depuis 1900",c:"c"},{d:"20 fév. 2026",t:"SCOTUS invalide IEEPA — tarifs illégaux",c:"h"},{d:"Fév. 2026",t:"Trump impose Section 122 — 10% global 150 jours",c:"h"},{d:"Avr. 2026",t:"Menaces tarifs 50% sur pays aidant Iran",c:"h"},{d:"24 juil. 2026",t:"Expiration Section 122 — prochaine décision",c:"m"}],
+   scores:{sources:8,victimes:2,impact:9,evolution:7,verif:9}},
+
+  {id:11,lat:34,lon:9,name:"Libye / Méditerranée",title:"Méditerranée — crise migratoire",level:"high",region:"Afrique Nord / Europe",source:["OIM","Euronews","UNHCR"],
+   desc:"2026 connaît l'un des débuts d'année les plus meurtriers en Méditerranée depuis 2014. La route centrale reste la plus dangereuse. Le Pacte Migration UE entre en vigueur mais son application reste inégale.",
+   kpis:[{val:"990",lbl:"Morts en Méditerranée 2026",color:"red"},{val:"+150%",lbl:"Hausse vs 2025 (route centrale)",color:"red"},{val:"10 781",lbl:"Arrivées irrégulières UE jan-fév",color:"amber"},{val:"181",lbl:"Morts en 10 jours (28 mars-7 avr.)",color:"red"}],
+   actors:[{icon:"🚢",bg:"#fee2e2",color:"#991b1b",name:"Migrants / Réfugiés",role:"Fuite conflits Afrique, Asie, MO"},{icon:"🇱🇾",bg:"#fef9c3",color:"#854d0e",name:"Libye",role:"Principal point de départ — instabilité"},{icon:"🇮🇹",bg:"#dbeafe",color:"#1e40af",name:"Italie / Malte",role:"Premières arrivées — saturation"},{icon:"🇪🇺",bg:"#f0fdf4",color:"#15803d",name:"UE",role:"Pacte Migration 2026 — Chypre présidente"}],
+   timeline:[{d:"2015",t:"Pic migration — 1 million d'arrivées en Europe",c:"c"},{d:"2023",t:"Remontée des flux après accalmie COVID",c:"h"},{d:"Mai 2024",t:"Pacte UE Migration & Asile adopté",c:"m"},{d:"Janv. 2026",t:"Pacte entre en vigueur — mise en œuvre",c:"m"},{d:"28 mars-7 avr.",t:"181 morts en 10 jours — 5 naufrages",c:"c"},{d:"Avr. 2026",t:"OIM: un des débuts d'année les plus meurtriers",c:"c"}],
+   scores:{sources:7,victimes:7,impact:7,evolution:6,verif:7}},
+
+  {id:12,lat:34,lon:67,name:"Afghanistan",title:"Afghanistan — crise humanitaire",level:"high",region:"Asie Centrale",source:["OCHA","ONU","UNHCR"],
+   desc:"Cinq ans après le retour des Taliban, la situation humanitaire est catastrophique. Les restrictions imposées aux femmes et filles sont les plus sévères au monde. L'aide internationale diminue face aux autres crises.",
+   kpis:[{val:"15M",lbl:"En insécurité alimentaire sévère",color:"red"},{val:"97%",lbl:"Population sous le seuil de pauvreté",color:"red"},{val:"2021",lbl:"Retour des Taliban",color:""},{val:"0",lbl:"Filles au lycée (décret Taliban)",color:"red"}],
+   actors:[{icon:"🇦🇫",bg:"#fee2e2",color:"#991b1b",name:"Taliban (Émirat islamique)",role:"Gouvernement de facto — restrictions"},{icon:"🌍",bg:"#dbeafe",color:"#1e40af",name:"ONU / ONG",role:"Aide humanitaire — accès limité"},{icon:"🇵🇰",bg:"#fef9c3",color:"#854d0e",name:"Pakistan",role:"Frontière tendue — rapatriements forcés"},{icon:"🇨🇳",bg:"#f0fdf4",color:"#15803d",name:"Chine / Russie",role:"Reconnaissance tacite — minerais"}],
+   timeline:[{d:"Août 2021",t:"Retour des Taliban — chute de Kaboul",c:"c"},{d:"2022",t:"Interdiction lycées pour les filles",c:"c"},{d:"2023",t:"Interdiction universités pour les femmes",c:"c"},{d:"2024",t:"ONU: pire crise humanitaire d'Afghanistan",c:"c"},{d:"2025",t:"Aide internationale réduite — autres crises prioritaires",c:"h"},{d:"Avr. 2026",t:"15M en insécurité alimentaire sévère",c:"c"}],
+   scores:{sources:7,victimes:6,impact:6,evolution:4,verif:8}},
+];
+
+const EXTRA=[
+  {id:13,lat:26,lon:50,name:"Golfe Persique",title:"Golfe — frappes sur infrastructures",level:"high",region:"Moyen-Orient",source:["ACLED","Reuters"],desc:"Lors de la guerre Iran-USA (fév-avr 2026), les frappes iraniennes ont ciblé les infrastructures critiques du Golfe: raffineries, désalinisation, data centers.",kpis:[{val:"660+",lbl:"Événements recensés",color:"red"},{val:"41+",lbl:"Morts (frappe directe)",color:"red"},{val:"3 pays",lbl:"UAE, Kuwait, Bahrain touchés",color:"amber"},{val:"8 avr.",lbl:"Cessez-le-feu",color:"blue"}],actors:[{icon:"🇮🇷",bg:"#fee2e2",color:"#991b1b",name:"Iran",role:"Frappes sur Golfe"},{icon:"🇰🇼",bg:"#dbeafe",color:"#1e40af",name:"Koweït",role:"Raffinerie & désalinisation frappées"},{icon:"🇦🇪",bg:"#fef9c3",color:"#854d0e",name:"UAE",role:"Plus exposé — frappes multiples"},{icon:"🇧🇭",bg:"#f0fdf4",color:"#15803d",name:"Bahrain",role:"Data center et aluminium ciblés"}],timeline:[{d:"28 fév.",t:"Début guerre USA-Iran",c:"c"},{d:"Mars",t:"Frappes iraniennes UAE et Kuwait",c:"c"},{d:"18 mars",t:"Frappe iranienne — South Pars / Golfe",c:"c"},{d:"Fin mars",t:"Aluminium Bahrain et UAE visé",c:"h"},{d:"8 avr.",t:"Cessez-le-feu — tensions résiduelles",c:"m"},{d:"Avr.26",t:"Trump menace 50% tarifs aux soutiens de l'Iran",c:"h"}],scores:{sources:8,victimes:6,impact:9,evolution:8,verif:8}},
+  {id:14,lat:36,lon:128,name:"Corée du Nord",title:"Corée — axe Moscou-Pékin-Pyongyang",level:"moderate",region:"Asie-Pacifique",source:["ISW","Reuters"],desc:"Kim Jong-un renforce ses liens avec la Chine et la Russie. Il soutient officiellement les revendications chinoises sur Taïwan et fournit des munitions à la Russie en Ukraine.",kpis:[{val:"10 avr.",lbl:"Soutien DPRK à Pékin/Taïwan",color:"red"},{val:"12 mars",lbl:"Reprise train Beijing-Pyongyang",color:""},{val:"2026",lbl:"Retour Air China Pyongyang",color:""},{val:"Nucl.",lbl:"Statut nucléaire tacitement accepté",color:"amber"}],actors:[{icon:"🇰🇵",bg:"#fee2e2",color:"#991b1b",name:"Kim Jong-un",role:"Aligne DPRK avec Chine et Russie"},{icon:"🇨🇳",bg:"#dbeafe",color:"#1e40af",name:"Xi Jinping",role:"Revitalise les échanges diplomatiques"},{icon:"🇷🇺",bg:"#fef9c3",color:"#854d0e",name:"Russie",role:"Récipiendaire munitions DPRK"},{icon:"🇰🇷",bg:"#f0fdf4",color:"#15803d",name:"Corée du Sud / USA",role:"Surveillance — exercices dissuasion"}],timeline:[{d:"2020-23",t:"Pandémie — DPRK en quasi-isolement total",c:"n"},{d:"Sept. 2025",t:"Sommet Xi-Kim — relance des liens",c:"m"},{d:"Oct. 2025",t:"Choe Su-hon visite Pékin",c:"m"},{d:"12 mars 2026",t:"Reprise train Beijing-Pyongyang",c:"m"},{d:"30 mars 2026",t:"Air China rouvre vols Pyongyang",c:"m"},{d:"10 avr. 2026",t:"Kim soutient officiellement la Chine sur Taïwan",c:"h"}],scores:{sources:7,victimes:1,impact:7,evolution:4,verif:7}},
+  {id:15,lat:38,lon:35,name:"Turquie",title:"Turquie — pivot géostratégique OTAN",level:"moderate",region:"Europe/Asie",source:["Reuters","Foreign Policy"],desc:"Ankara navigue entre ses obligations OTAN et ses intérêts commerciaux avec Moscou. Joue un rôle de médiateur entre Ukraine et Russie tout en profitant économiquement.",kpis:[{val:"OTAN",lbl:"Membre — tensions internes",color:"amber"},{val:"3e",lbl:"Armée OTAN par effectifs",color:""},{val:"Actif",lbl:"Rôle médiateur Ukraine-Russie",color:"blue"},{val:"Hausse",lbl:"Échanges commerciaux avec Russie",color:"amber"}],actors:[{icon:"🇹🇷",bg:"#dbeafe",color:"#1e40af",name:"Turquie (Erdogan)",role:"Médiation & commerce avec Moscou"},{icon:"🇷🇺",bg:"#fee2e2",color:"#991b1b",name:"Russie",role:"Partenaire commercial malgré guerre"},{icon:"🇺🇦",bg:"#fef9c3",color:"#854d0e",name:"Ukraine",role:"Bénéficiaire des drones Bayraktar"},{icon:"🇪🇺",bg:"#f0fdf4",color:"#15803d",name:"UE / OTAN",role:"Partenaires — frustration face au pivot"}],timeline:[{d:"2022",t:"Turquie refuse sanctions contre la Russie",c:"h"},{d:"2023",t:"Bloque brièvement adhésion Suède OTAN",c:"h"},{d:"2024",t:"Médiation accord céréales Mer Noire",c:"m"},{d:"2025",t:"Drones Bayraktar livrés à l'Ukraine",c:"m"},{d:"2026",t:"Maintient commerce Russie malgré pression alliés",c:"h"},{d:"Avr. 2026",t:"Actif dans négociations cessez-le-feu Ukraine",c:"m"}],scores:{sources:6,victimes:1,impact:6,evolution:4,verif:7}},
+];
+
+const ALL_EV=[...EV,...EXTRA];
+function calcScore(e){const w={sources:.25,victimes:.25,impact:.25,evolution:.15,verif:.1};const s=e.scores;return Math.round((s.sources*w.sources+s.victimes*w.victimes+s.impact*w.impact+s.evolution*w.evolution+s.verif*w.verif)*10);}
+ALL_EV.forEach(e=>{e.score=calcScore(e);if(!e.kpis)e.kpis=[];if(!e.actors)e.actors=[];if(!e.timeline)e.timeline=[];});
+ALL_EV.sort((a,b)=>b.score-a.score);
+
+const CL={critical:'c',high:'h',moderate:'m',watch:'w'};
+const COLORS={critical:'#dc2626',high:'#d97706',moderate:'#2563eb',watch:'#16a34a'};
+const LEVEL_LABEL={critical:'Critique',high:'Élevé',moderate:'Modéré',watch:'Surveillance'};
+
+let filter='all', selId=null, autoRot=true, worldData=null;
+let rotY=0, isDrag=false, lastMX=0;
+
+const canvas=document.getElementById('globe-canvas');
+const ctx=canvas.getContext('2d');
+let W,H,cx,cy,R;
+
+function resize(){
+  const gc=document.getElementById('globe-col');
+  const rect=gc.getBoundingClientRect();
+  W=canvas.width=rect.width;
+  H=canvas.height=rect.height;
+  cx=W/2;cy=H/2;
+  R=Math.min(W,H)*0.38;
+}
+
+function project(lat,lon){
+  const phi=(90-lat)*Math.PI/180;
+  const th=(lon+rotY*180/Math.PI)*Math.PI/180;
+  const x=R*Math.sin(phi)*Math.sin(th);
+  const y=-R*Math.cos(phi);
+  const z=R*Math.sin(phi)*Math.cos(th);
+  return{x:cx+x,y:cy+y,z,vis:z>-R*0.05};
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.fillStyle='#0b1929';ctx.fill();
+  ctx.strokeStyle='rgba(30,80,160,0.1)';ctx.lineWidth=0.5;
+  for(let la=-60;la<=60;la+=30){ctx.beginPath();let f=true;for(let lo=-180;lo<=180;lo+=4){const p=project(la,lo);if(!p.vis){f=true;continue;}f?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);f=false;}ctx.stroke();}
+  for(let lo=-150;lo<=180;lo+=30){ctx.beginPath();let f=true;for(let la=-80;la<=80;la+=4){const p=project(la,lo);if(!p.vis){f=true;continue;}f?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);f=false;}ctx.stroke();}
+  if(worldData){
+    const feats=topojson.feature(worldData,worldData.objects.countries).features;
+    feats.forEach(f=>{
+      const polys=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;
+      polys.forEach(poly=>{poly.forEach(ring=>{
+        let any=false,first=true;ctx.beginPath();
+        ring.forEach(c=>{const p=project(c[1],c[0]);if(p.vis){any=true;first?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);first=false;}else{first=true;}});
+        if(any){ctx.fillStyle='rgba(40,90,160,0.4)';ctx.fill();ctx.strokeStyle='rgba(80,140,240,0.22)';ctx.lineWidth=0.3;ctx.stroke();}
+      });});
+    });
+  }
+  const rim=ctx.createRadialGradient(cx-R*.35,cy-R*.35,R*.05,cx,cy,R);
+  rim.addColorStop(0,'rgba(120,180,255,0.06)');rim.addColorStop(.7,'rgba(0,0,0,0)');rim.addColorStop(1,'rgba(0,10,40,0.28)');
+  ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.fillStyle=rim;ctx.fill();
+  const vis=ALL_EV.filter(e=>filter==='all'||e.level===filter);
+  vis.sort((a,b)=>project(a.lat,a.lon).z-project(b.lat,b.lon).z);
+  vis.forEach(ev=>{
+    const p=project(ev.lat,ev.lon);if(!p.vis)return;
+    const c=COLORS[ev.level]||COLORS.watch;
+    const isSel=selId===ev.id;
+    const sz=Math.max(5,3+ev.score/22)+(isSel?3:0);
+    const[r,g,b]=[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
+    ctx.beginPath();ctx.arc(p.x,p.y,sz+10,0,Math.PI*2);ctx.fillStyle=`rgba(${r},${g},${b},0.12)`;ctx.fill();
+    if(ev.level==='critical'){ctx.beginPath();ctx.arc(p.x,p.y,sz+5,0,Math.PI*2);ctx.fillStyle=`rgba(${r},${g},${b},0.2)`;ctx.fill();}
+    ctx.beginPath();ctx.arc(p.x,p.y,sz,0,Math.PI*2);ctx.fillStyle=c;ctx.fill();
+    if(isSel){ctx.beginPath();ctx.arc(p.x,p.y,sz+4,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,0.9)';ctx.lineWidth=1.5;ctx.stroke();}
+    ctx.font=`bold 9px system-ui`;ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,0.95)';
+    ctx.fillText(Math.round(ev.score),p.x,p.y-sz-3);
+  });
+}
+
+function loop(){if(autoRot)rotY+=.0015;draw();requestAnimationFrame(loop);}
+function toggleP(btn){autoRot=!autoRot;btn.textContent=autoRot?'⏸ Pause':'▶ Play';}
+function setF(f,el){filter=f;document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('on'));el.classList.add('on');renderList();}
+
+canvas.addEventListener('mousedown',e=>{isDrag=true;lastMX=e.clientX;autoRot=false;});
+canvas.addEventListener('mousemove',e=>{if(!isDrag)return;rotY+=(e.clientX-lastMX)*.004;lastMX=e.clientX;});
+canvas.addEventListener('mouseup',()=>isDrag=false);
+canvas.addEventListener('mouseleave',()=>isDrag=false);
+canvas.addEventListener('touchstart',e=>{isDrag=true;lastMX=e.touches[0].clientX;autoRot=false;},{passive:true});
+canvas.addEventListener('touchmove',e=>{if(!isDrag)return;rotY+=(e.touches[0].clientX-lastMX)*.004;lastMX=e.touches[0].clientX;},{passive:true});
+canvas.addEventListener('touchend',()=>isDrag=false);
+
+canvas.addEventListener('click',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=(e.clientX-rect.left)*(W/rect.width),my=(e.clientY-rect.top)*(H/rect.height);
+  let best=null,bd=26;
+  ALL_EV.forEach(ev=>{
+    if(filter!=='all'&&ev.level!==filter)return;
+    const p=project(ev.lat,ev.lon);if(!p.vis)return;
+    const d=Math.hypot(mx-p.x,my-p.y);if(d<bd){bd=d;best=ev;}
+  });
+  if(best){selId=best.id;openDetail(best);rotY=-(best.lon*Math.PI/180);}
+});
+
+function renderList(){
+  const vis=ALL_EV.filter(e=>filter==='all'||e.level===filter);
+  document.getElementById('list-sub').textContent=vis.length+' foyers — par score d\'importance';
+  document.getElementById('ev-list').innerHTML=vis.map(ev=>`
+    <div class="erow${selId===ev.id?' sel':''}" onclick="clickEv(${ev.id})">
+      <div class="edot ${CL[ev.level]||'w'}"></div>
+      <div class="ebody">
+        <div class="etitle">${ev.title}</div>
+        <div class="esub">${ev.name} · ${ev.region}</div>
+      </div>
+      <div class="escore ${CL[ev.level]||'w'}">${ev.score}</div>
+    </div>`).join('');
+}
+
+function clickEv(id){
+  const ev=ALL_EV.find(e=>e.id===id);
+  if(!ev)return;
+  selId=id;
+  openDetail(ev);
+  rotY=-(ev.lon*Math.PI/180);
+  renderList();
+}
+
+function openDetail(ev){
+  document.getElementById('list-view').style.display='none';
+  const dv=document.getElementById('detail-view');
+  dv.style.display='flex';
+
+  const cl=CL[ev.level]||'w';
+  document.getElementById('dv-badge').className='dv-badge '+cl;
+  document.getElementById('dv-badge').textContent=LEVEL_LABEL[ev.level]||ev.level;
+  document.getElementById('dv-title').textContent=ev.title;
+  document.getElementById('dv-loc').textContent=ev.name+' · '+ev.region;
+
+  const sc=ev.scores;
+  const scoreColors={sources:'#dc2626',victimes:'#d97706',impact:'#2563eb',evolution:'#16a34a',verif:'#7c3aed'};
+
+  const kpiHTML=ev.kpis.length?`<div class="section">
+    <div class="sec-title">Données clés</div>
+    <div class="kpi-grid">${ev.kpis.map(k=>`<div class="kpi"><div class="kpi-val ${k.color||''}">${k.val}</div><div class="kpi-lbl">${k.lbl}</div></div>`).join('')}</div>
+  </div>`:'';
+
+  const actorsHTML=ev.actors.length?`<div class="section">
+    <div class="sec-title">Acteurs principaux</div>
+    <div class="actors">${ev.actors.map(a=>`<div class="actor"><div class="actor-icon" style="background:${a.bg};color:${a.color}">${a.icon}</div><div><div class="actor-name">${a.name}</div><div class="actor-role">${a.role}</div></div></div>`).join('')}</div>
+  </div>`:'';
+
+  const tlHTML=ev.timeline.length?`<div class="section">
+    <div class="sec-title">Chronologie</div>
+    <div class="timeline">${ev.timeline.map((t,i)=>`<div class="tl-item"><div class="tl-left"><div class="tl-dot ${t.c||'n'}"></div>${i<ev.timeline.length-1?'<div class="tl-line"></div>':''}</div><div><div class="tl-date">${t.d}</div><div class="tl-text">${t.t}</div></div></div>`).join('')}</div>
+  </div>`:'';
+
+  document.getElementById('dv-body').innerHTML=`
+    <div class="section">
+      <div class="sec-title">Situation</div>
+      <div class="desc-text">${ev.desc}</div>
+    </div>
+    ${kpiHTML}
+    ${actorsHTML}
+    ${tlHTML}
+    <div class="section">
+      <div class="sec-title">Score d'importance — ${ev.score}/100</div>
+      <div class="score-rows">
+        ${[['sources','Sources'],[' victimes','Victimes'],['impact','Impact géo'],['evolution','Évolution'],['verif','Vérif.']].map(([k,l])=>{const kk=k.trim();return`<div class="sr"><div class="sr-lbl">${l}</div><div class="sr-track"><div class="sr-fill" style="width:${sc[kk]*10}%;background:${scoreColors[kk]}"></div></div><div class="sr-val">${sc[kk]}/10</div></div>`;}).join('')}
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-title">Sources vérifiées</div>
+      <div>${(ev.source||[]).map(s=>`<span class="src-tag">${s}</span>`).join('')}</div>
+    </div>`;
+}
+
+function closeDetail(){
+  selId=null;
+  document.getElementById('detail-view').style.display='none';
+  document.getElementById('list-view').style.display='flex';
+  renderList();
+}
+
+function doBriefing(){
+  const ev=ALL_EV.find(e=>e.id===selId);
+  if(!ev)return;
+  sendPrompt(`Briefing géopolitique détaillé et rigoureux sur : "${ev.title}" (${ev.region}), situation au 16 avril 2026. Inclus acteurs, chronologie, enjeux stratégiques, données chiffrées et sources fiables.`);
+}
+
+fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r=>r.json()).then(d=>{worldData=d;}).catch(()=>{});
+
+document.getElementById('cnt-c').textContent=ALL_EV.filter(e=>e.level==='critical').length;
+document.getElementById('cnt-h').textContent=ALL_EV.filter(e=>e.level==='high').length;
+document.getElementById('cnt-m').textContent=ALL_EV.filter(e=>e.level==='moderate').length;
+
+resize();renderList();loop();
+
+const ro=new ResizeObserver(()=>resize());
+ro.observe(document.getElementById('globe-col'));
+</script>
